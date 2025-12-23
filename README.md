@@ -1,44 +1,80 @@
-# CICD with Jenkins
+# CI/CD with Jenkins
 
-🎯 Goal for CICD: Use Jenkins to automate the 2-tier app deployment
+🎯 Goal for CI/CD: Use Jenkins to automate the 2-tier app deployment
+
+---
+
+## Overview
+
+This document describes the design and implementation of a 3-stage CI/CD pipeline using Jenkins to deploy a 2-tier Node.js application to AWS EC2.
+
+The pipeline automatically:
+- Tests code pushed to the `dev` branch
+- Merges tested code into `main`
+- Deploys the application to an EC2 instance
+
+The solution demonstrates best practices for automation, security, and branch protection using webhooks, SSH authentication, and job chaining.
+
 
 <br>
 
+---
+
 ## 📌 Table of Contents
 
-- [CICD with Jenkins](#cicd-with-jenkins)
+- [CI/CD with Jenkins](#cicd-with-jenkins)
+  - [Overview](#overview)
   - [📌 Table of Contents](#-table-of-contents)
-  - [Session: Intro to CICD and Jenkins](#session-intro-to-cicd-and-jenkins)
+  - [Session: Intro to CI/CD and Jenkins](#session-intro-to-cicd-and-jenkins)
     - [What is CI?](#what-is-ci)
     - [What is CD?](#what-is-cd)
     - [What is Jenkins?](#what-is-jenkins)
     - [Why use Jenkins?](#why-use-jenkins)
     - [Stages of Jenkins](#stages-of-jenkins)
-      - [A Typical Jenkins CICD Pipeline](#a-typical-jenkins-cicd-pipeline)
+      - [A Typical Jenkins CI/CD Pipeline](#a-typical-jenkins-cicd-pipeline)
     - [What Alternatives are there for Jenkins?](#what-alternatives-are-there-for-jenkins)
     - [Why Build a Pipeline?](#why-build-a-pipeline)
-  - [CICD Pipeline Structure](#cicd-pipeline-structure)
+  - [Our CI/CD Pipeline Structure](#our-cicd-pipeline-structure)
     - [Pipeline Overview](#pipeline-overview)
     - [What Does a Successful Pipeline Do?](#what-does-a-successful-pipeline-do)
+  - [Why This CI/CD Pipeline Design?](#why-this-cicd-pipeline-design)
+    - [Why 3 Separate Jobs?](#why-3-separate-jobs)
+    - [Why dev → main?](#why-dev--main)
+    - [Why Webhooks Instead of Polling?](#why-webhooks-instead-of-polling)
+    - [Why Jenkins Worker Nodes?](#why-jenkins-worker-nodes)
+    - [Security Considerations](#security-considerations)
+      - [SSH Authentication and Key Management](#ssh-authentication-and-key-management)
+      - [Branch Protection and Automated Quality Gates](#branch-protection-and-automated-quality-gates)
   - [Code-along: Use Jenkins For the First Time](#code-along-use-jenkins-for-the-first-time)
+    - [Overview](#overview-1)
+    - [Setup](#setup)
   - [3-job Jenkins Pipeline to Deploy Sparta Test App](#3-job-jenkins-pipeline-to-deploy-sparta-test-app)
-    - [Code-along: Generate New Key Pair for Jenkins](#code-along-generate-new-key-pair-for-jenkins)
+    - [How To Generate New Key Pair for Jenkins](#how-to-generate-new-key-pair-for-jenkins)
     - [Job 1](#job-1)
+      - [How To Set Up Job 1](#how-to-set-up-job-1)
+      - [Job 1 Outcome](#job-1-outcome)
     - [Job 2](#job-2)
+      - [How To Set Up Job 2](#how-to-set-up-job-2)
+      - [Job 2 Outcome](#job-2-outcome)
     - [Job 3](#job-3)
-  - [ADD PICTURE OF SPARTA APP HOMEPAGE HERE!!!](#add-picture-of-sparta-app-homepage-here)
+      - [How To Set Up Job 3](#how-to-set-up-job-3)
+      - [Job 3 Outcome](#job-3-outcome)
+      - [Pipeline Result](#pipeline-result)
   - [Links to using SSH authentication with a repo on GitHub](#links-to-using-ssh-authentication-with-a-repo-on-github)
+
+<br>
+<br>
 
 ---
 
-## Session: Intro to CICD and Jenkins
+## Session: Intro to CI/CD and Jenkins
 
 
 ### What is CI?
 - continuous integration
 - automatically merging code
 - Triggered by:
-  - Developers frequently pushing their code changes to a shared repository - this triggers CICD pipeline 
+  - Developers frequently pushing their code changes to a shared repository - this triggers CI/CD pipeline 
 - tests are run automatically on the code before it is integrated into the main code
 
 ➕
@@ -83,12 +119,16 @@ Can mean:
 ### What is Jenkins?
 - automation server
 - open-source
-- primarily used for CICD, but it can automate much more
+- primarily used for CI/CD, but it can automate much more
+
+<br>
+
+---
 
 ### Why use Jenkins?
 
 ➕
-- automate entire CICD pipeline
+- automate entire CI/CD pipeline
 - reduces human error
 - extensibility: Jenkins has 2000+ plug-ins that can support wide range of tools
 - scalability: Jenkins server can scale easily by adding/using worker nodes or agents to run builds/ tests
@@ -97,25 +137,29 @@ Can mean:
 
 ➖
 - complex setup for beginners 
-- maintainance overhead: plug-ins and versions - getting to work and updating
+- maintenance overhead: plug-ins and versions - getting to work and updating
 - resource intensive when running multiple jobs
 - user interface may be a little outdated, compared to modern tools
 
 <br>
 
+---
+
 ### Stages of Jenkins
 
-#### A Typical Jenkins CICD Pipeline
+#### A Typical Jenkins CI/CD Pipeline
 
 🎭 **stages**
 1. Source Code Management (SCM) usually from git
 2. Build: compile the code, build into executable artifact
 3. Test: automated tests are run (unit tests, integration tests, etc)
 4. Package: into deployable artifact
-5. If using cont deployment then the package is deployed into target environment .e.g test, production
+5. If using continuous deployment then the package is deployed into target environment .e.g test, production
 6. Monitor: monitoring tools may need to be deployed and configured by pipeline, to observe performance, log issues, etc after deployment
 
 <br>
+
+---
 
 ### What Alternatives are there for Jenkins?
 
@@ -129,6 +173,8 @@ Can mean:
 - Azure DevOps (Azure Pipelines)
 
 <br>
+
+---
   
 ### Why Build a Pipeline?
 
@@ -143,17 +189,24 @@ Can mean:
 
 ---
 
-## CICD Pipeline Structure
+## Our CI/CD Pipeline Structure
 
 ### Pipeline Overview
 
 ![alt text](image-33.png)
 
+⚙️ **What Does the Developer Do?**
+- Pushes their code to **dev branch**
+
+⚙️ **What Does GitHub Do?**
+- Sends a **notification webhook** to Jenkins
+  
+🔒 public key required to secure the GitHub repository
+
 ⚙️ **What Does Jenkins Do?**
-- Receives webhook from GitHub
-- Pulls latest code from dev
+- **Receives webhook** from GitHub
 - Made up of master node - uses agent/worker nodes to actually carry out the jobs
-- The master node (built in node / server) spins up (delegates) agent nodes that run 3 jobs:
+- The master node (built in node / server) spins up (delegates) agent nodes that run **3 jobs:**
 
 <br>
 
@@ -163,41 +216,33 @@ Can mean:
 
 <br>
 
-1️⃣ TEST
+1️⃣ **TEST**
 
-- Developer pushes code to **dev branch**
-- GitHub sends a **notification webhook** to Jenkins
-- Jenkins job starts automatically
+- Pulls latest code from dev branch
 - Code tested on Jenkins worker node
+  
+🔑 private key required to access the GitHub repository
 
-2️⃣ MERGE
+2️⃣ **MERGE**
 
 - Worker node checks out main branch
 - New tested code **merged from dev branch to main branch**
 - Main branch pushed to GitHub
 
-3️⃣ DEPLOY
+🔑 private key required to merge to the GitHub repository
+
+3️⃣ **DEPLOY**
 
 - Tested code from the worker node is **copied into the EC2 instance**
 - ssh into EC2 instance and start app
 
-<br>
+🔑 private key required to ssh into AWS EC2
 
-🪝 **Why Webhook?**
-- ❌ Polling = Jenkins keeps asking GitHub “any changes?”
-- ✅ Webhook = GitHub tells Jenkins immediately
 
-<br>
+⚙️ **What Does AWS EC2 Do?**
+- An AWS EC2 is already running with all Sparta app dependencies
 
-**Built in Node vs Worker Nodes**
-- built in nodes are simpler than having worker nodes and so make it easier to get started with Jenkins
-BUT
-- built in nodes cannot scale up on demand
-- if built in nodes crash, no more CICD pipelines can be run
-- wny builds will have the same level of access to the file system as the Jenkins process
-- with built in nodes, any builds will have the same level of access to the file system as the Jenkins process
-
-⭐ this is why we use worker nodes
+🔒 public key required to secure AWS EC2
 
 <br>
 
@@ -211,17 +256,97 @@ BUT
 - Tests fail → pipeline stops ❌
 - 💡 This prevents broken code ever reaching main or AWS
 
-security to build in:
-JOB 1 - Jenkins needs access to github repo, so it needs private key in ssh folder - it needs this to do the merge
-JOB 1 - public key needs to be on github
-JOB 3 - Jenkins needs to ssh into EC2 instance so needs private key - copy private key from local machine to app - rsync of scp - then restart the app
+<br>
 
-STEPS TO DO
-make separate github repo with app code
-JOB 1 - Jenkins needs access to github repo, so it needs private key in ssh folder - it needs this to do the merge
-JOB 1 - public key needs to be on github
-get web hook set up so it can trigger job 1
+---
 
+## Why This CI/CD Pipeline Design?
+
+### Why 3 Separate Jobs?
+
+- Separation of concerns
+- Fail fast
+- Easier debugging
+- Clear CI vs CD boundary
+
+<br>
+
+---
+
+### Why dev → main?
+
+- Protects production-ready branch
+- Prevents untested code deployment
+- Matches real-world Git workflows
+
+<br>
+
+---
+
+### Why Webhooks Instead of Polling?
+
+❌ Polling = Jenkins keeps asking GitHub “any changes?”
+✅ Webhook = GitHub tells Jenkins immediately when code has been pushed to GitHub
+
+- Immediate feedback
+- Reduced Jenkins load
+- Industry best practice
+
+<br>
+
+---
+
+### Why Jenkins Worker Nodes?
+
+⭐ we use worker nodes instead of built-in nodes
+
+- built in nodes are simpler than having worker nodes and so make it easier to get started with Jenkins
+
+BUT unlike worker node
+
+- built in nodes cannot scale up on demand
+- if built in nodes crash, no more CI/CD pipelines can be run
+- any builds will have the same level of access to the file system as the Jenkins process
+- with built in nodes, any builds will have the same level of access to the file system as the Jenkins process
+
+➕ Worker Nodes
+
+- Scalability 
+- Fault isolation
+- Security separation
+
+<br>
+
+---
+
+### Security Considerations
+
+#### SSH Authentication and Key Management
+
+We Have Separate SSH keys for:
+
+1️⃣ GitHub access
+
+    - Allows Jenkins to pull, merge, and push code to the repository  
+    - Public key is stored in the GitHub repository as a deploy key  
+    - Private key is securely stored in Jenkins Credentials Manager
+
+2️⃣EC2 access
+
+    - Allows Jenkins to securely connect to the EC2 instance for deployment  
+    - Public key is stored in AWS EC2
+    - Private key is stored securely in Jenkins and never committed to source control
+
+<br>
+
+#### Branch Protection and Automated Quality Gates
+
+- Developers push changes only to the **`dev` branch**
+- **Automated tests (Job 1)** act as a quality gate
+- Code is merged into **`main` only if tests pass**
+- This prevents:
+  - Untested code reaching production-ready branches
+  - Human error during manual merges
 
 <br>
 
@@ -229,15 +354,18 @@ get web hook set up so it can trigger job 1
 
 ## Code-along: Use Jenkins For the First Time
 
-**Overview**
+### Overview
 - Jenkins server is running
 - No jobs yet
 - Once a job runs, it is called a build
 - Each job = a Jenkins project
 - Linked jobs together = a pipeline
 
+<br>
 
-**Setup**
+---
+
+### Setup
 1. sign into Jenkins server
    - Server 2
    - Default address for Jenkins server 2: http://52.31.15.176:8080
@@ -286,11 +414,14 @@ get web hook set up so it can trigger job 1
     lucy-first-project > configure > post build actions > build other projects > lucy-get-date-time (remove comma) >trigger only if build stable > save > click build now > check on dashboard
 
 
+<br>
+
+---
+
 ## 3-job Jenkins Pipeline to Deploy Sparta Test App
 
-### Code-along: Generate New Key Pair for Jenkins
+### How To Generate New Key Pair for Jenkins
 
-**How?**
 1. create an ssh key pair
 
     In Git Bash:
@@ -332,9 +463,9 @@ get web hook set up so it can trigger job 1
 
 🎯 Goal - Automatically run tests every time code is pushed to the dev branch
 
-1. make new project for job 1 on Jenkins
+#### How To Set Up Job 1
 
-**How?**
+1. make new project for job 1 on Jenkins
 
 - Jenkins > click new item > name: lucy-sparta-app-job1-ci-test > click freestyle project > click ok > general > github project tick > https://github.com/lucystevenson/tech515-sparta-test-app-cicd.git but remove '.git' and replace with / like https://github.com/lucystevenson/tech515-sparta-test-app-cicd/ > source code management > click git > URL: git@github.com:lucystevenson/tech515-sparta-test-app-cicd.git (make sure this is SSH not HTTPS)> add credential > add > jenkins > kind: ssh username with private key > id&username: lucy-jenkins-2-github-key > description: to read/write to repo > private key > enter directly (cat lucy-jenkins-2-github-key in github - copy and paste)> add > then add this key to credentials drop down > branch > set default branch to */main > build environment > click provide node & npm bin/ folder to PATH > specify NodeJS version 20 > build steps > select execute shell > we are now in github repo > add 
 
@@ -385,7 +516,7 @@ get web hook set up so it can trigger job 1
       25  git push
     ```
 
-**Outcome**
+#### Job 1 Outcome
 
 - Developer pushes code to GitHub
 - GitHub sends a webhook
@@ -409,7 +540,7 @@ We have taken files that have been pushed to github on the dev branch and tested
 Only when that job 1 is successful, we build job 2 that checks out the main branch and merges the new tested code from the dev branch to the main branch and pushes this to github
 
 ❌
-- We don't need a webhook here - we will set up job 2 so it automatically builds after job 1 - NO need to tick 'github hook trigger for GITScm polling' for job 2 as we are already listening for a webhook on job 1 > if we add this here, job 2 will also be listening out for a webhook from github and if we push a change to github, job 2 will be triggered unneccesarily
+- We don't need a webhook here - we will set up job 2 so it automatically builds after job 1 - NO need to tick 'github hook trigger for GITScm polling' for job 2 as we are already listening for a webhook on job 1 > if we add this here, job 2 will also be listening out for a webhook from github and if we push a change to github, job 2 will be triggered unnecessarily
 
 - build environment > click provide node & npm bin/ folder to PATH > NO need to tick this on job 2 as we have already npm install in job 1
 
@@ -423,7 +554,7 @@ Only when that job 1 is successful, we build job 2 that checks out the main bran
 - Human error during merging
 - Untested code reaching production-ready branches
 
-**How?**
+#### How To Set Up Job 2
 
 1. make project for job 2 on Jenkins
 
@@ -486,7 +617,8 @@ Only when that job 1 is successful, we build job 2 that checks out the main bran
       32  git push
    ```
 
-**Outcome**
+#### Job 2 Outcome
+
 - GitHub webhook triggers Job 1
 - Job 1 runs tests
 - If successful, Job 2 runs
@@ -502,19 +634,10 @@ Only when that job 1 is successful, we build job 2 that checks out the main bran
 
 **What Has Already Happened in Jobs 1 and 2?**
 
-We have taken files that have been pushed to github on the dev branch, tested the files on a worker node and then, only when that is successful, we checkout the main branch and merge the new code from the dev branch to the main branch and push this to github
-
-**Outcome For Job 3**
-
-We need to take the tested code from the worker node and copy this into the EC2 instance, then ssh into EC2 instance and run commands to start up app
-
-- rsync code → EC2
-- ssh into EC2
-- install deps (if needed)
-- restart app (pm2 / node)
+We have taken files that have been pushed to github on the dev branch, tested the files on a worker node and then, only when that is successful, we checkout the main branch and merge the new code from the dev branch to the main branch and push this to github. We need to take the tested code from the worker node and copy this into the EC2 instance, then ssh into EC2 instance and run commands to start up our Sparta app
 
 
-**How?**
+#### How To Set Up Job 3
 
 1. create an AWS EC2 instance
 
@@ -611,7 +734,7 @@ cd into views folder
 
 `cd app/views/`
 
-update line 'Change via Jenkins CICD pipeline on 16/12/25 12:25' in 'index.ejs' file with current time:
+update line 'Change via Jenkins CI/CD pipeline on 16/12/25 12:25' in 'index.ejs' file with current time:
 
 `nano index.ejs`
 
@@ -625,25 +748,18 @@ git commit -m "change front page 9:22"
 git push
 ```
 
-⭐Result⭐
+#### Job 3 Outcome
 
-Everytime we change the line 'Change via Jenkins CICD pipeline on 16/12/25 12:25' in 'index.ejs' and push the change to our GitHub repo, our Jenkins pipeline will be triggered and the frontpage of our app will be updated with the change we made in our code
+- rsync code → EC2
+- ssh into EC2
+- install deps (if needed)
+- restart app (pm2 / node)
 
-git push 1 - 'Change via Jenkins CICD pipeline on 16/12/25 12:25'
+#### Pipeline Result
 
-ADD PICTURE OF SPARTA APP HOMEPAGE HERE!!!
+Everytime we change the line 'Change via Jenkins CI/CD pipeline on 16/12/25 12:25' in 'index.ejs' and push the change to our GitHub repo, our Jenkins pipeline will be triggered and the frontpage of our app will be updated with the change we made in our code
 
-git push 2 - 'Change via Jenkins CICD pipeline on 16/12/25 12:25'
 
-ADD PICTURE OF SPARTA APP HOMEPAGE HERE!!!
----
-To deliver: Document with Markdown ready to provide the link to it by **TO FILL IN**
-
-Use principles for good documentation such as easy to navigate, readability
-Include (you decide on the order):
-- diagram to explain your CICD pipeline
-- why we setup the CICD pipeline the way we did, benefits you have seen, benefits for an organisation
-- how you setup each of your jobs (including authentication/security), webhook & how the pipeline is triggered, what the result should be at the end
 
 <br>
 

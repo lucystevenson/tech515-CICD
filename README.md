@@ -326,15 +326,15 @@ We Have Separate SSH keys for:
 
 1️⃣ GitHub access
 
-    - Allows Jenkins to pull, merge, and push code to the repository  
-    - Public key is stored in the GitHub repository as a deploy key  
-    - Private key is securely stored in Jenkins Credentials Manager
+  - Allows Jenkins to pull, merge, and push code to the repository  
+  - Public key is stored in the GitHub repository as a deploy key  
+  - Private key is securely stored in Jenkins Credentials Manager
 
 2️⃣EC2 access
 
-    - Allows Jenkins to securely connect to the EC2 instance for deployment  
-    - Public key is stored in AWS EC2
-    - Private key is stored securely in Jenkins and never committed to source control
+  - Allows Jenkins to securely connect to the EC2 instance for deployment  
+  - Public key is stored in AWS EC2
+  - Private key is stored securely in Jenkins and never committed to source control
 
 <br>
 
@@ -384,7 +384,9 @@ We Have Separate SSH keys for:
 - Click Build Now
 - Green tick = success
   Dashboard view:
+
   ![alt text](image-12.png)
+
 - Job runs on a worker EC2 node
 
 4. check console output
@@ -534,7 +536,7 @@ We Have Separate SSH keys for:
 
 We have taken files that have been pushed to GitHub on the dev branch and tested the files on a worker node
 
-**Outcome For Job 2**
+**How Does Job 2 Link To Job 1?**
 
 Only when that job 1 is successful, we build job 2 that checks out the main branch and merges the new tested code from the dev branch to the main branch and pushes this to GitHub
 

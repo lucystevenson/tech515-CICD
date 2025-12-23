@@ -6,14 +6,14 @@
 
 ## Overview
 
-This document describes the design and implementation of a 3-stage CI/CD pipeline using Jenkins to deploy a 2-tier Node.js application to AWS EC2.
+This document describes the design and implementation of a 3-stage CI/CD pipeline using Jenkins to deploy a 2-tier Node.js application to AWS EC2
 
 The pipeline automatically:
 - Tests code pushed to the `dev` branch
 - Merges tested code into `main`
 - Deploys the application to an EC2 instance
 
-The solution demonstrates best practices for automation, security, and branch protection using webhooks, SSH authentication, and job chaining.
+The solution demonstrates best practices for automation, security, and branch protection using webhooks, SSH authentication and job chaining
 
 
 <br>
@@ -206,7 +206,7 @@ Can mean:
 ⚙️ **What Does Jenkins Do?**
 - **Receives webhook** from GitHub
 - Made up of master node - uses agent/worker nodes to actually carry out the jobs
-- The master node (built in node / server) spins up (delegates) agent nodes that run **3 jobs:**
+- The master node (built-in node / server) spins up (delegates) agent nodes that run **3 jobs:**
 
 <br>
 
@@ -300,14 +300,13 @@ Can mean:
 
 ⭐ we use worker nodes instead of built-in nodes
 
-- built in nodes are simpler than having worker nodes and so make it easier to get started with Jenkins
+- built-in nodes are simpler than having worker nodes and so make it easier to get started with Jenkins
 
 BUT unlike worker node
 
-- built in nodes cannot scale up on demand
-- if built in nodes crash, no more CI/CD pipelines can be run
-- any builds will have the same level of access to the file system as the Jenkins process
-- with built in nodes, any builds will have the same level of access to the file system as the Jenkins process
+- built-in nodes cannot scale up on demand
+- if built-in nodes crash, no more CI/CD pipelines can be run
+- with built-in nodes, any builds will have the same level of access to the file system as the Jenkins process
 
 ➕ Worker Nodes
 
@@ -375,7 +374,7 @@ We Have Separate SSH keys for:
 
 2. create first job
 
-    new item > name:lucy-first-project > freestyle prject > ok to get to congigure page for the project > General >
+    new item > name:lucy-first-project > freestyle project > ok to get to configure page for the project > General >
     add description:testing jenkins > discard old builds > Max # of builds to keep: 5 > Build steps > pick execute shell > uname -a > save at the bottom
 
     ![alt text](image-9.png)
@@ -399,7 +398,7 @@ We Have Separate SSH keys for:
 
     OR
 
-   2. new item > name:lucy-get-date-time > freestyle prject > ok to get to congigure page for the project > General >
+   2. new item > name:lucy-get-date-time > freestyle project > ok to get to configure page for the project > General >
    add description:testing jenkins > discard old builds > Max # of builds to keep: 5 > Build steps > pick execute shell > date > save at the bottom
 
 6. connect jobs 1 and 2
@@ -439,7 +438,7 @@ We Have Separate SSH keys for:
 
     ```
 
-2. add public key to app repo in github
+2. add public key to app repo in GitHub
 
     go to app repo > settings > deploy keys > add > add public key name > cat lucy-jenkins-2-github-key.pub to get 'key' to fill in > tick allow write access 
 
@@ -477,7 +476,7 @@ We Have Separate SSH keys for:
 
   ![alt text](image-19.png)
 
-  authenticate with ssh github link
+  authenticate with ssh GitHub link
   ![alt text](image-18.png)
 
 
@@ -495,7 +494,7 @@ We Have Separate SSH keys for:
 
     ![alt text](image-20.png)
 
-2. set up notification to be sent on github repo to Jenkins
+2. set up notification to be sent on GitHub repo to Jenkins
 
     on GitHub add webhook pointing to http://<jenkins-ip>:8080/:
 
@@ -533,14 +532,14 @@ We Have Separate SSH keys for:
 
 **What Has Already Happened in Job 1?**
 
-We have taken files that have been pushed to github on the dev branch and tested the files on a worker node
+We have taken files that have been pushed to GitHub on the dev branch and tested the files on a worker node
 
 **Outcome For Job 2**
 
-Only when that job 1 is successful, we build job 2 that checks out the main branch and merges the new tested code from the dev branch to the main branch and pushes this to github
+Only when that job 1 is successful, we build job 2 that checks out the main branch and merges the new tested code from the dev branch to the main branch and pushes this to GitHub
 
 ❌
-- We don't need a webhook here - we will set up job 2 so it automatically builds after job 1 - NO need to tick 'github hook trigger for GITScm polling' for job 2 as we are already listening for a webhook on job 1 > if we add this here, job 2 will also be listening out for a webhook from github and if we push a change to github, job 2 will be triggered unnecessarily
+- We don't need a webhook here - we will set up job 2 so it automatically builds after job 1 - NO need to tick 'GitHub hook trigger for GITScm polling' for job 2 as we are already listening for a webhook on job 1 > if we add this here, job 2 will also be listening out for a webhook from GitHub and if we push a change to GitHub, job 2 will be triggered unnecessarily
 
 - build environment > click provide node & npm bin/ folder to PATH > NO need to tick this on job 2 as we have already npm install in job 1
 
@@ -560,12 +559,12 @@ Only when that job 1 is successful, we build job 2 that checks out the main bran
 
    - Jenkins > click new item > name: lucy-sparta-app-job2-ci-merge> click freestyle project > click ok
 
-   - general > github project tick > https://github.com/lucystevenson/tech515-sparta-test-app-cicd.git but remove '.git' and replace with / like https://github.com/lucystevenson/tech515-sparta-test-app-cicd/ > source code management > click git > URL: git@github.com:lucystevenson/tech515-sparta-test-app-cicd.git (make sure this is SSH not HTTPS)> add credential > drop down > select lucy-jenkins-2-github-key > branch > set default branch to */dev
+   - general > GitHub project tick > https://github.com/lucystevenson/tech515-sparta-test-app-cicd.git but remove '.git' and replace with / like https://github.com/lucystevenson/tech515-sparta-test-app-cicd/ > source code management > click git > URL: git@github.com:lucystevenson/tech515-sparta-test-app-cicd.git (make sure this is SSH not HTTPS)> add credential > drop down > select lucy-jenkins-2-github-key > branch > set default branch to */dev
 
    - build environment > click SSH agent > add credentials 'lucy-jenkins-2-github-key' 
      - this loads your GitHub SSH private key into the job and enables Jenkins to write to the repo so it can do the git commands below
 
-   - build steps > select execute shell > we are now in github repo > add 
+   - build steps > select execute shell > we are now in GitHub repo > add 
 
     ```
     git fetch origin
@@ -634,7 +633,7 @@ Only when that job 1 is successful, we build job 2 that checks out the main bran
 
 **What Has Already Happened in Jobs 1 and 2?**
 
-We have taken files that have been pushed to github on the dev branch, tested the files on a worker node and then, only when that is successful, we checkout the main branch and merge the new code from the dev branch to the main branch and push this to github. We need to take the tested code from the worker node and copy this into the EC2 instance, then ssh into EC2 instance and run commands to start up our Sparta app
+We have taken files that have been pushed to GitHub on the dev branch, tested the files on a worker node and then, only when that is successful, we check out the main branch and merge the new code from the dev branch to the main branch and push this to GitHub. We need to take the tested code from the worker node and copy this into the EC2 instance, then ssh into EC2 instance and run commands to start up our Sparta app
 
 
 #### How To Set Up Job 3
@@ -642,7 +641,7 @@ We have taken files that have been pushed to github on the dev branch, tested th
 1. create an AWS EC2 instance
 
 - Sparta test app using Node JS 20 needs Ubuntu 22.04 LTS
-- Use normal SG rules, but allow from anywhere (to get it working initially) OR Jenkin worker nodes SG to allow Jenkins to SSH in (for better security):
+- Use normal SG rules, but allow from anywhere (to get it working initially) OR Jenkins worker nodes SG to allow Jenkins to SSH in (for better security):
 security group should have these inbound rules:
 ![alt text](image-27.png)
 
@@ -672,7 +671,7 @@ sudo npm install -g pm2
 
 - Jenkins > click new item > name: lucy-sparta-app-job3-cd-deploy> click freestyle project > click ok
 
-- general > github project tick > https://github.com/lucystevenson/tech515-sparta-test-app-cicd.git but remove '.git' and replace with / like https://github.com/lucystevenson/tech515-sparta-test-app-cicd/ 
+- general > GitHub project tick > https://github.com/lucystevenson/tech515-sparta-test-app-cicd.git but remove '.git' and replace with / like https://github.com/lucystevenson/tech515-sparta-test-app-cicd/ 
 
 - source code management > tick git > URL: git@github.com:lucystevenson/tech515-sparta-test-app-cicd.git > Credentials: lucy-jenkins-2-github-key > Branch: */main
 
@@ -714,7 +713,7 @@ EOF
 >
 >rsync is better than scp because it only transfers changed files, whereas scp copies everything unnecessarily
 
-3. connect jobs 2 and 3
+1. connect jobs 2 and 3
 
     **Why?**
 
@@ -724,7 +723,7 @@ EOF
 
     - lucy-sparta-app-job2-ci-merge > Configure > add post-build Actions > Build other projects > projects to build > add lucy-sparta-app-job3-cd-deploy > Trigger only if build is stable > save
 
-4. test pipeline
+2. test pipeline
 
 In Git Bash:
 
@@ -740,7 +739,7 @@ update line 'Change via Jenkins CI/CD pipeline on 16/12/25 12:25' in 'index.ejs'
 
 ![alt text](image-23.png)
 
-push change to github
+push change to GitHub
 
 ```
 git add . stage change
@@ -757,9 +756,16 @@ git push
 
 #### Pipeline Result
 
-Everytime we change the line 'Change via Jenkins CI/CD pipeline on 16/12/25 12:25' in 'index.ejs' and push the change to our GitHub repo, our Jenkins pipeline will be triggered and the frontpage of our app will be updated with the change we made in our code
+Every time we change the app text and push the change to our GitHub repo, our Jenkins pipeline will be triggered and the front page of our app will be updated with the change we made in our code:
+
+change 1
 
 
+![alt text](image-36.png)
+
+change 2
+
+![alt text](image-37.png)
 
 <br>
 
